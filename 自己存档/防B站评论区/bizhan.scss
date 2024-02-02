@@ -1,0 +1,62 @@
+$comment:30px;
+
+html,body{
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+ul,li{
+    list-style: none;
+}
+li{
+    display: flex;
+    margin-bottom: 20px;
+}
+
+.box{
+    width: 50%;
+    // height: 50vh;
+    background-color: lightblue;
+    margin: 0 auto;
+}
+
+.comment{
+    height: $comment;
+    width: 200px;
+    background-color: orange;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.self{
+    height: 50px;
+    background-color: greenyellow;
+    input{
+        width: 80%;
+        height: 60%;
+    }
+    button{
+        height: 58%;
+    }
+}
+
+.allPeople{
+    height: calc(100% - 3.125rem);
+    background-color: bisque;
+}
+
+.imgRight{
+    width: 80%;
+    height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+
+.infobuttom{
+    width: 40%;
+    display: flex;
+    justify-content: space-between;
+    
+}
