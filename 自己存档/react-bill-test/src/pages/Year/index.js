@@ -1,11 +1,11 @@
 import React from 'react';
 
-const About = () => {
+const Year = () => {
     return (
         <div>
-            <h2>About页面</h2>
+            Year
         </div>
     );
 }
 
-export default About;
+export default Year;
