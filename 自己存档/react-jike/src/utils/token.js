@@ -10,7 +10,7 @@ const getToken = ()=>{
 }
 
 const removeToken = ()=>{
-    removeToken(TOKENKEY)
+    return localStorage.removeItem(TOKENKEY)
 }
 
 export {setToken,getToken,removeToken}
