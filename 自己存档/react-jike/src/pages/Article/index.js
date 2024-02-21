@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Card,
   Breadcrumb,
@@ -9,23 +9,24 @@ import {
   Select,
 } from "antd";
 import locale from "antd/es/date-picker/locale/zh_CN";
-import { Table, Tag, Space } from "antd";
+import { Table, Tag, Space,Popconfirm } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import img404 from "@/assets/error.png";
 import { useChannel } from "@/hooks/useChannel";
 import { useEffect, useState } from "react";
-import { getArticleListApi } from "@/apis/article";
+import { delArticleAPI, getArticleListApi } from "@/apis/article";
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const Article = () => {
+  const navigate = useNavigate()
   const { channelList } = useChannel();
-  const [count,setCount] = useState(0)
+  const [count, setCount] = useState(0);
   const state = {
-    1:<Tag color="warning">待审核</Tag>,
-    2:<Tag color="green">审核通过</Tag>
-  }
+    1: <Tag color="warning">待审核</Tag>,
+    2: <Tag color="green">审核通过</Tag>,
+  };
   // 准备列数据
   const columns = [
     {
@@ -47,7 +48,7 @@ const Article = () => {
       title: "状态",
       dataIndex: "status",
       // 根据后端返回的状态status来作为条件渲染
-      render: (data) => state[data]
+      render: (data) => state[data],
     },
     {
       title: "发布时间",
@@ -70,43 +71,77 @@ const Article = () => {
       render: (data) => {
         return (
           <Space size="middle">
-            <Button type="primary" shape="circle" icon={<EditOutlined />} />
-            <Button
-              type="primary"
-              danger
-              shape="circle"
-              icon={<DeleteOutlined />}
-            />
+            <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={()=>navigate(`/publish?id=${data.id}`)} />
+
+            <Popconfirm
+              title="删除文章"
+              description="确认要删除当前文章吗?"
+              onConfirm={()=>onConfirm(data)}
+              // onCancel={cancel}
+              okText="Yes"
+              cancelText="No">
+              <Button
+                type="primary"
+                danger
+                shape="circle"
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
           </Space>
         );
       },
     },
   ];
-  // 准备表格body数据
-  const data = [
-    {
-      id: "8218",
-      comment_count: 0,
-      cover: {
-        images: [],
-      },
-      like_count: 0,
-      pubdate: "2019-03-11 09:00:00",
-      read_count: 2,
-      status: 2,
-      title: "wkwebview离线化加载h5资源解决方案",
-    },
-  ];
+  // 筛选功能
+  const [reqData, setReqData] = useState({
+    status: "",
+    channel_id: "",
+    begin_pubdate: "",
+    end_pubdate: "",
+    page: 1,
+    per_page: 4,
+  });
+  // 获取筛选数据
+  const onFinish = (formValue) => {
+    // console.log(formValue);
+    setReqData({
+      ...reqData,
+      channel_id: formValue.channel_id,
+      status: formValue.status,
+      begin_pubdate: formValue.date[0].format("YYYY-MM-DD"),
+      end_pubdate: formValue.date[1].format("YYYY-MM-DD"),
+    });
+  };
+
   // 获取文章列表
   const [list, setList] = useState([]);
   useEffect(() => {
     async function getList() {
-      const res = await getArticleListApi();
+      const res = await getArticleListApi(reqData);
       setList(res.data.results);
-      setCount(res.data.total_count)
+      setCount(res.data.total_count);
     }
     getList();
-  }, []);
+  }, [reqData]);
+
+  // 分页回调
+  const onPageChange = ({ current }) => {
+    // console.log(page);
+    setReqData({
+      ...reqData,
+      page: current,
+    });
+  };
+  // 删除回调
+  const onConfirm = async (data)=>{
+    console.log(data);
+    await delArticleAPI(data.id)
+    // 触发重新渲染
+    setReqData({
+      ...reqData
+    })
+  }
+
   return (
     <div>
       <Card
@@ -119,7 +154,7 @@ const Article = () => {
           />
         }
         style={{ marginBottom: 20 }}>
-        <Form initialValues={{ status: "" }}>
+        <Form initialValues={{ status: "" }} onFinish={onFinish}>
           <Form.Item label="状态" name="status">
             <Radio.Group>
               <Radio value={""}>全部</Radio>
@@ -131,7 +166,6 @@ const Article = () => {
           <Form.Item label="频道" name="channel_id">
             <Select
               placeholder="请选择文章频道"
-              defaultValue="lucy"
               style={{ width: 120 }}>
               {channelList.map((item) => (
                 <Option value={item.id} key={item.id}>
@@ -155,7 +189,16 @@ const Article = () => {
       </Card>
       {/* 表格区域 */}
       <Card title={`根据筛选条件共查询到 ${count} 条结果：`}>
-        <Table rowKey="id" columns={columns} dataSource={list} />
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list}
+          pagination={{
+            total: count,
+            pageSize: reqData.per_page,
+          }}
+          onChange={onPageChange}
+        />
       </Card>
     </div>
   );

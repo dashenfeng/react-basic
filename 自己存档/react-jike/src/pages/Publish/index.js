@@ -11,36 +11,59 @@ import {
   message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "./index.scss";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { useEffect, useState } from "react";
-import { createArticleAPI, getChannelAPI } from "@/apis/article";
+import {
+  createArticleAPI,
+  getArticleById,
+  updateArticleAPI,
+} from "@/apis/article";
 import { useChannel } from "@/hooks/useChannel";
 
 const { Option } = Select;
 
 const Publish = () => {
   // 获取频道列表
-  const {channelList} = useChannel()
+  const { channelList } = useChannel();
+  const navigator = useNavigate();
 
   // 提交表单
   const onFinish = (formValue) => {
-    if(imageList.length !== imageType) return message.warning('封面类型和图片数量不匹配')
-    // console.log(formValue,'formValue');
+    if (imageList.length !== imageType)
+      return message.warning("封面类型和图片数量不匹配");
     const { title, content, channel_id } = formValue;
     const reqData = {
       title,
       content,
       cover: {
         type: imageType,
-        images: imageList.map(item => item.response.data.url),
+        images: imageList.map((item) => {
+          if (item.response) {
+            return item.response.data.url;
+          } else {
+            return item.url;
+          }
+        }), // 图片列表(新增模式)
       },
       channel_id,
     };
-    // 提交
-    createArticleAPI(reqData);
+    // 提交  根据是否有id调用不同接口（编辑|新增）
+    const submitData = async () => {
+      let res;
+      if (articleId) {
+        res = await updateArticleAPI({ ...reqData, id: articleId }); // 修改
+      } else {
+        res = await createArticleAPI(reqData); // 新增
+      }
+      return res;
+    };
+    submitData();
+    message.success('提交成功')
+    navigator('/article')
+
   };
   // 上传图片
   const [imageList, setImageList] = useState([]);
@@ -53,6 +76,30 @@ const Publish = () => {
   const onTypeChange = (e) => {
     setImageType(e.target.value);
   };
+  // 回传数据
+  const [searchParams] = useSearchParams();
+  const articleId = searchParams.get("id");
+  // console.log(articleId,'articleId');
+  const [form] = Form.useForm(); // antd里面的设计
+  useEffect(() => {
+    // 通过id获取数据
+    async function getArticleDetail() {
+      const res = await getArticleById(articleId);
+      // console.log(res.data,'res.data');
+      const data = res.data;
+      const { cover, ...formValue } = data; // { title, content, channel_id } = formValue;
+      form.setFieldsValue({ ...formValue, type: cover.type });
+      // 回填图片列表
+      setImageType(data.cover.type); // 改变封面类型（几张图）
+      setImageList(
+        data.cover.images.map((url) => {
+          return { url };
+        })
+      );
+    }
+    articleId && getArticleDetail(); //编辑时才调用
+  }, [articleId, form]);
+
   return (
     <div className="publish">
       <Card
@@ -60,7 +107,7 @@ const Publish = () => {
           <Breadcrumb
             items={[
               { title: <Link to={"/"}>首页</Link> },
-              { title: "发布文章" },
+              { title: `${articleId ? "编辑" : "发布"}文章` },
             ]}
           />
         }>
@@ -68,7 +115,8 @@ const Publish = () => {
           labelCol={{ span: 4 }}
           wrapperCol={{ span: 16 }}
           initialValues={{ type: 0 }}
-          onFinish={onFinish}>
+          onFinish={onFinish}
+          form={form}>
           <Form.Item
             label="标题"
             name="title"
@@ -103,7 +151,7 @@ const Publish = () => {
                 action={"http://geek.itheima.net/v1_0/upload"}
                 onChange={onChange}
                 maxCount={imageType}
-                >
+                fileList={imageList}>
                 <div style={{ marginTop: 8 }}>
                   <PlusOutlined />
                 </div>
