@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setToken as _setToken, getToken, removeToken, request } from "@/utils";
+import { setToken as _setToken, getToken, removeToken } from "@/utils";
 import { loginAPI, getProfileAPI } from "@/apis/user";
 
 const userStore = createSlice({
@@ -29,14 +29,12 @@ const userStore = createSlice({
 // 1.发送异步请求 2.提交同步action进行token的存入
 const fetchLogin = (loginForm) => {
   return async (dispatch) => {
-    // const res = await request.post("/authorizations", loginForm);
     const res = await loginAPI(loginForm);
     dispatch(setToken(res.data.token));
   };
 };
 const fetchUserInfo = () => {
   return async (dispatch) => {
-    // const res = await request.get("/user/profile");
     const res = await getProfileAPI();
     dispatch(setUserInfo(res.data));
   };
