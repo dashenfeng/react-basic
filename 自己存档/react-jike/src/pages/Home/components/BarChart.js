@@ -6,7 +6,7 @@ const BarChart = ({
   sData,
   style = { width: "400px", height: "300px" },
 }) => {
-  const chartRef = useRef(null);
+  const chartRef = useRef(null); // 获取div盒子，最后图标要在盒子上面生效
   useEffect(() => {
     // 1. 生成实例
     const myChart = echarts.init(chartRef.current);
